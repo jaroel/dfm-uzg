@@ -1,7 +1,7 @@
 Run dev:
 
 cd src
-hypercorn server:app --reload
+uvicorn server:app --reload
 
 
 todo:

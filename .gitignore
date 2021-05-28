@@ -3,3 +3,4 @@ include
 lib
 *.mp3
 pyvenv.cfg
+__pycache__/
