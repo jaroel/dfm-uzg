@@ -9,11 +9,7 @@ from fastapi.responses import StreamingResponse
 import aioftp
 
 
-creds = {
-    'host': "86.81.98.192",
-    'user': 'UZG',
-    'password': '4862KpZ2'
-}
+creds = {"host": "86.81.98.192", "user": "UZG", "password": "4862KpZ2"}
 
 
 app = FastAPI()
@@ -37,7 +33,13 @@ async def ftp_listing(request: Request):
     entries = []
     for entry in files:
         filename = entry[0].name
-        entries.append({"filename": filename, "date": '-'.join(reversed(filename[:10].split('-'))), "time": filename[11:16].replace('-', ':')})
+        entries.append(
+            {
+                "filename": filename,
+                "date": "-".join(reversed(filename[:10].split("-"))),
+                "time": filename[11:16].replace("-", ":"),
+            }
+        )
 
     return templates.TemplateResponse("index.html", {"request": request, "entries": entries})
 
