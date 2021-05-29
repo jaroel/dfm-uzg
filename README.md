@@ -18,3 +18,4 @@ What does it use?
 - fastapi
 - aoiftp
 - jinja2
+- blue code formatter
