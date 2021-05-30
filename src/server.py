@@ -37,23 +37,23 @@ month_names = {
 }
 
 day_names = {
-    0: 'Maandag',
-    1: 'Dinsdag',
-    2: 'Woensdag',
-    3: 'Donderdag',
-    4: 'Vrijdag',
-    5: 'Zaterdag',
-    6: 'Zondag'
+    0: 'maandag',
+    1: 'dinsdag',
+    2: 'woensdag',
+    3: 'donderdag',
+    4: 'vrijdag',
+    5: 'zaterdag',
+    6: 'zondag'
 }
 
 day_names_short = {
-    0: 'Ma',
-    1: 'Di',
-    2: 'Wo',
-    3: 'Do',
-    4: 'Vr',
-    5: 'Za',
-    6: 'Zo'
+    0: 'ma',
+    1: 'di',
+    2: 'wo',
+    3: 'do',
+    4: 'vr',
+    5: 'za',
+    6: 'zo'
 }
 
 

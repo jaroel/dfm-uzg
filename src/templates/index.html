@@ -49,7 +49,7 @@
                     <div class="tab-content content-days p-3" id="tabcontent-day-{{ year }}-{{ month }}">
                         {% for day, items in days.items() %}
                         <div class="tab-pane fade" id="day-{{ year}}-{{ month }}-{{ day }}-content" role="tabpanel" aria-labelledby="day-{{ year }}-{{ month }}-{{ day }}-tab">
-                            <h3>Uitzending van {{ day_names[day%7].lower() }} {{ day }} {{ month_names[month].lower() }} {{ year }}</h3>
+                            <h3>Uitzending van {{ day_names[items[0].datetime.weekday()] }} {{ day }} {{ month_names[month].lower() }} {{ year }}</h3>
                               <p class="text-muted">Dit zijn opnames van de Dinxper FM stream. Klik een link in de lijst om de uitzending terug te luisteren.</p>
 
                               <ol class="list-group">
@@ -57,8 +57,8 @@
 
                                     <li class="list-group-item d-flex justify-content-between align-items-start ps-1">
                                         <div class="ms-2 me-auto">
-                                            <div class="fw-bold">{{ entry.datetime.hour }} uur</div>
-                                            <a href="/fetch/{{ entry.name }}" title="Beluister de uitzending van {{ day_names[day%7].lower() }} {{ day }} {{ month_names[month].lower() }} {{ year }} om {{ entry.datetime.hour }} uur terug">{{ entry.name }}</a>
+                                            <div class="fw-bold">{{ entry.datetime.hour }} uur.</div>
+                                            <a href="/fetch/{{ entry.name }}" title="Beluister de uitzending van {{ day_names[items[0].datetime.weekday()] }} {{ day }} {{ month_names[month].lower() }} {{ year }} om {{ entry.datetime.hour }} uur terug">{{ entry.name }}</a>
                                         </div>
                                     </li>
                                 {% endfor %}
