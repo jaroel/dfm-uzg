@@ -2,16 +2,89 @@
 
 <head>
     <title>Item Details</title>
+
+    <link href="{{ url_for('static', path='/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+
+    <script src="{{ url_for('static', path='/js/bootstrap.bundle.js') }}"></script>
 </head>
 
 <body>
-    <h1>Item ID: {{ id }}</h1>
-    <ul>
-        {% for entry in entries %}
-        <li><a href="{{ url_for('fetch', filename=entry['filename']) }}">{{ entry['date'] }} - {{ entry['time'] }}</a></li>
+    <h1>Dinxper FM: Uitzending gemist</h1>
+
+
+    <ul class="nav nav-tabs" id="tab-years" role="tablist">
+        {% for year in years %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="year-{{year}}-tab" data-bs-toggle="tab" data-bs-target="#year-{{ year }}-content" type="button" role="tab" aria-controls="year-{{ year }}-content">{{ year }}</button>
+        </li>
         {% endfor %}
     </ul>
+    <div class="tab-content" id="tabcontent-years">
+        {% for year, months in years.items() %}
+        <div class="tab-pane fade" id="year-{{ year }}-content" role="tabpanel" aria-labelledby="year-{{ year }}-tab">
+            <!-- tab voor year {{ year }} -->
+
+
+            <ul class="nav nav-tabs" id="tab-months-{{ year }}" role="tablist">
+                {% for month in months %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="month-{{ year }}-{{ month }}-tab" data-bs-toggle="tab" data-bs-target="#month-{{ year }}-{{ month }}-content" type="button" role="tab" aria-controls="month-{{ year }}-{{ month }}-content">{{ month_names[month] }}</button>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="tab-content content-months" id="tabcontent-months-{{ year }}">
+                {% for month, days in months.items() %}
+                <div class="tab-pane fade" id="month-{{ year }}-{{ month }}-content" role="tabpanel" aria-labelledby="month-{{ year }}-{{ month }}-tab">
+                    <!-- tab voor month {{ month }} -->
+
+
+                    <ul class="nav nav-tabs nav-month" id="tab-days-{{ year }}-{{ month }}" role="tablist">
+                        {% for day in days %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="day-{{ year }}-{{ month }}-{{ day }}-tab" data-bs-toggle="tab" data-bs-target="#day-{{ year}}-{{ month }}-{{ day }}-content" type="button" role="tab" aria-controls="day-{{ year}}-{{ month }}-{{ day }}-content">{{ day }}</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="tab-content content-days p-3" id="tabcontent-day-{{ year }}-{{ month }}">
+                        {% for day, items in days.items() %}
+                        <div class="tab-pane fade" id="day-{{ year}}-{{ month }}-{{ day }}-content" role="tabpanel" aria-labelledby="day-{{ year }}-{{ month }}-{{ day }}-tab">
+                            <h3>Uitzending van {{ day_names[day%7].lower() }} {{ day }} {{ month_names[month].lower() }} {{ year }}</h3>
+                              <p class="text-muted">Dit zijn opnames van de Dinxper FM stream. Klik een link in de lijst om de uitzending terug te luisteren.</p>
+
+                              <ol class="list-group">
+                                {% for entry in items %}
+
+                                    <li class="list-group-item d-flex justify-content-between align-items-start ps-1">
+                                        <div class="ms-2 me-auto">
+                                            <div class="fw-bold">{{ entry.datetime.hour }} uur</div>
+                                            <a href="{{ url_for('fetch', filename=entry.name) }}" title="Beluister de uitzending van {{ day_names[day%7].lower() }} {{ day }} {{ month_names[month].lower() }} {{ year }} om {{ entry.datetime.hour }} uur terug">{{ entry.name }}</a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                                </ol>
+
+
+                        </div>
+                        {% endfor %}
+                    </div>
+
+
+                </div>
+                {% endfor %}
+            </div>
+
+
+
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.querySelector('#tab-years li:last-child button').click();
+        document.querySelector('#tabcontent-years .tab-pane.active .nav-tabs li:last-child button').click()
+        document.querySelector('.content-months .tab-pane.active li:last-child button').click()
+    </script>
 </body>
 
 </html>

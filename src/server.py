@@ -1,4 +1,8 @@
 import datetime
+import dataclasses
+import functools
+import pathlib
+from typing import List
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -17,36 +21,104 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 
 templates = Jinja2Templates(directory='templates')
 
+month_names = {
+    1: 'Januari',
+    2: 'Februari',
+    3: 'Maart',
+    4: 'April',
+    5: 'Mei',
+    6: 'Juni',
+    7: 'Juli',
+    8: 'Augustus',
+    9: 'September',
+    10: 'Oktober',
+    11: 'November',
+    12: 'December'
+}
 
+day_names = {
+    0: 'Maandag',
+    1: 'Dinsdag',
+    2: 'Woensdag',
+    3: 'Donderdag',
+    4: 'Vrijdag',
+    5: 'Zaterdag',
+    6: 'Zondag'
+}
+
+day_names_short = {
+    0: 'Ma',
+    1: 'Di',
+    2: 'Wo',
+    3: 'Do',
+    4: 'Vr',
+    5: 'Za',
+    6: 'Zo'
+}
+
+
+@dataclasses.dataclass
+@functools.total_ordering
 class File:
-    year: int
-    month: int
+    datetime: datetime.datetime
+    name: str
+    size: int
+
+    def __lt__(self, other):
+        return self.datetime < other.datetime
+
+    def title(self):
+        day = day_names[self.datetime.weekday() % 7].lower()
+        month = month_names[self.datetime.month]
+        year = self.datetime.year
+        return f'Uitzending van {day} {self.datetime.day} {month} {year}'
+
+    def size_display(self):
+        size = int(self.size / 1024 / 1024)
+        return f'{size} MB'
 
 
 @app.get('/', response_class=HTMLResponse)
 async def ftp_listing(request: Request):
     async with aioftp.Client.context(**creds) as client:
-        files = dict(await client.list())
+        ftp_files = dict(await client.list())
 
-    files = sorted(files.items(), key=lambda item: item[1]['modify'], reverse=True)
-    files = [x for x in files if x[0].name.endswith('.mp3')]
+    now = datetime.datetime.now()
 
-    # Latest mp3 might not be there just yet.
-    if files and files[0][0].name[11:13] == str(datetime.datetime.now().hour):
-        files = files[1:]
+    files: List[File] = []
 
-    entries = []
-    for entry in files:
-        filename = entry[0].name
-        entries.append(
-            {
-                'filename': filename,
-                'date': '-'.join(reversed(filename[:10].split('-'))),
-                'time': filename[11:16].replace('-', ':'),
-            }
+    for path, metadata in ftp_files.items():
+        path = pathlib.Path(path)
+        if path.suffix != '.mp3':
+            continue
+        try:
+            day, month, year = path.stem[:10].split('-')
+            hour, minute = path.stem[11:].split('-')
+            date = datetime.datetime(
+                int(year), int(month), int(day), int(hour), int(minute)
+            )
+        except:
+            continue
+        files.append(
+            File(name=path.name, size=int(metadata['size']), datetime=date)
         )
 
-    return templates.TemplateResponse('index.html', {'request': request, 'entries': entries})
+    files.sort()
+
+    # Latest mp3 might not be there just yet.
+    if files and files[-1].datetime == now.replace(second=0, microsecond=0):
+        files = files[:-1]
+
+    years = {}
+    for f in files:
+        months: dict = years.setdefault(f.datetime.year, {})
+        days: dict = months.setdefault(f.datetime.month, {})
+        items: List = days.setdefault(f.datetime.day, [])
+        items.append(f)
+
+    return templates.TemplateResponse(
+        'index.html', {'request': request, 'years': years, 'month_names': month_names, 'day_names': day_names, 'day_names_short': day_names_short}
+    )
 
 
 @app.get('/fetch/{filename}', name='fetch')
@@ -60,7 +132,9 @@ async def ftp_fetch(request: Request, filename: str):
     return StreamingResponse(
         stream_file(filename),
         media_type='audio/mpeg',
-        headers={'content-disposition': 'attachment; filename="{}"'.format(filename)},
+        headers={
+            'content-disposition': 'attachment; filename="{}"'.format(filename)
+        },
     )
 
 
