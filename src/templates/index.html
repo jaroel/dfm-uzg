@@ -61,8 +61,9 @@
                             aria-labelledby="day-{{ year }}-{{ month }}-{{ day }}-tab">
                             <h3>Uitzending van {{ day_names[items[0].datetime.weekday()] }} {{ day }} {{
                                 month_names[month].lower() }} {{ year }}</h3>
-                            <p class="text-muted">Dit zijn opnames van de Dinxper FM stream. Klik een link in de lijst
-                                om de uitzending terug te luisteren.</p>
+                            <p class="text-muted">Dit zijn opnames van de Dinxper FM stream. Gebruik de speler om de
+                                uitzending terug te luisteren of klik de link om de uitzending op te slaan.
+                            </p>
 
                             <div class="d-flex flex-row flex-wrap">
                                 {% for entry in items %}
