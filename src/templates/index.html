@@ -15,7 +15,7 @@
     <h1 class="mb-3">Dinxper FM: Uitzending gemist</h1>
 
 
-    <ul class="nav nav-tabs" id="tab-years" role="tablist">
+    <ul class="nav nav-tabs mb-1" id="tab-years" role="tablist">
         {% for year in years %}
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="year-{{year}}-tab" data-bs-toggle="tab"
@@ -30,7 +30,7 @@
             <!-- tab voor year {{ year }} -->
 
 
-            <ul class="nav nav-tabs" id="tab-months-{{ year }}" role="tablist">
+            <ul class="nav nav-tabs mb-1" id="tab-months-{{ year }}" role="tablist">
                 {% for month in months %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="month-{{ year }}-{{ month }}-tab" data-bs-toggle="tab"
