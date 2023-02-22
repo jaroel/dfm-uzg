@@ -1,17 +1,14 @@
-import datetime
 import dataclasses
+import datetime
 import functools
 import pathlib
 from typing import List
 
-from fastapi import FastAPI, Request, HTTPException
+import aioftp
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-from fastapi.responses import StreamingResponse
-
-import aioftp
-
 
 creds = {'host': '86.81.98.192', 'user': 'UZG', 'password': '4862KpZ2'}
 
@@ -33,7 +30,7 @@ month_names = {
     9: 'September',
     10: 'Oktober',
     11: 'November',
-    12: 'December'
+    12: 'December',
 }
 
 day_names = {
@@ -43,7 +40,7 @@ day_names = {
     3: 'donderdag',
     4: 'vrijdag',
     5: 'zaterdag',
-    6: 'zondag'
+    6: 'zondag',
 }
 
 day_names_short = {
@@ -53,7 +50,7 @@ day_names_short = {
     3: 'do',
     4: 'vr',
     5: 'za',
-    6: 'zo'
+    6: 'zo',
 }
 
 
@@ -97,7 +94,7 @@ async def ftp_listing(request: Request):
             date = datetime.datetime(
                 int(year), int(month), int(day), int(hour), int(minute)
             )
-        except:
+        except Exception:
             continue
         files.append(
             File(name=path.name, size=int(metadata['size']), datetime=date)
@@ -117,7 +114,14 @@ async def ftp_listing(request: Request):
         items.append(f)
 
     return templates.TemplateResponse(
-        'index.html', {'request': request, 'years': years, 'month_names': month_names, 'day_names': day_names, 'day_names_short': day_names_short}
+        'index.html',
+        {
+            'request': request,
+            'years': years,
+            'month_names': month_names,
+            'day_names': day_names,
+            'day_names_short': day_names_short,
+        },
     )
 
 
