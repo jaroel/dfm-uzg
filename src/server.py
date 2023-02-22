@@ -2,7 +2,7 @@ import dataclasses
 import datetime
 import functools
 import pathlib
-from typing import List
+from typing import List, TypedDict
 
 import aioftp
 from fastapi import FastAPI, HTTPException, Request
@@ -11,13 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 creds = {'host': '86.81.98.192', 'user': 'UZG', 'password': '4862KpZ2'}
-
-
-app = FastAPI()
-app.mount('/static', StaticFiles(directory='static'), name='static')
-
 templates = Jinja2Templates(directory='templates')
-
 month_names = {
     1: 'Januari',
     2: 'Februari',
@@ -32,7 +26,6 @@ month_names = {
     11: 'November',
     12: 'December',
 }
-
 day_names = {
     0: 'maandag',
     1: 'dinsdag',
@@ -42,7 +35,6 @@ day_names = {
     5: 'zaterdag',
     6: 'zondag',
 }
-
 day_names_short = {
     0: 'ma',
     1: 'di',
@@ -75,16 +67,24 @@ class File:
         return f'{size} MB'
 
 
+class FileMetadata(TypedDict):
+    size: str
+
+
+app = FastAPI()
+app.mount('/static', StaticFiles(directory='static'), name='static')
+
+
 @app.get('/', response_class=HTMLResponse)
 async def ftp_listing(request: Request):
     async with aioftp.Client.context(**creds) as client:
-        ftp_files = dict(await client.list())
+        ftp_files: list[tuple[str, FileMetadata]] = await client.list()
 
     now = datetime.datetime.now()
 
     files: List[File] = []
 
-    for path, metadata in ftp_files.items():
+    for path, metadata in ftp_files:
         path = pathlib.Path(path)
         if path.suffix != '.mp3':
             continue
@@ -106,11 +106,11 @@ async def ftp_listing(request: Request):
     if files and files[-1].datetime == now.replace(second=0, microsecond=0):
         files = files[:-1]
 
-    years = {}
+    years: dict[int, dict[int, dict[int, list[File]]]] = {}
     for f in files:
-        months: dict = years.setdefault(f.datetime.year, {})
-        days: dict = months.setdefault(f.datetime.month, {})
-        items: List = days.setdefault(f.datetime.day, [])
+        months = years.setdefault(f.datetime.year, {})
+        days = months.setdefault(f.datetime.month, {})
+        items = days.setdefault(f.datetime.day, [])
         items.append(f)
 
     return templates.TemplateResponse(
