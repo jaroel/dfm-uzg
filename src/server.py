@@ -1,6 +1,7 @@
 import dataclasses
-import datetime
+from datetime import datetime
 import functools
+from operator import attrgetter
 import pathlib
 from typing import List, TypedDict
 
@@ -9,47 +10,48 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import computed_field
 
-creds = {'host': '86.81.98.192', 'user': 'UZG', 'password': '4862KpZ2'}
-templates = Jinja2Templates(directory='templates')
+creds = {"host": "dinxperfm.freeddns.org", "user": "UZG", "password": "4862KpZ2"}
+templates = Jinja2Templates(directory="templates")
 month_names = {
-    1: 'Januari',
-    2: 'Februari',
-    3: 'Maart',
-    4: 'April',
-    5: 'Mei',
-    6: 'Juni',
-    7: 'Juli',
-    8: 'Augustus',
-    9: 'September',
-    10: 'Oktober',
-    11: 'November',
-    12: 'December',
+    1: "Januari",
+    2: "Februari",
+    3: "Maart",
+    4: "April",
+    5: "Mei",
+    6: "Juni",
+    7: "Juli",
+    8: "Augustus",
+    9: "September",
+    10: "Oktober",
+    11: "November",
+    12: "December",
 }
 day_names = {
-    0: 'maandag',
-    1: 'dinsdag',
-    2: 'woensdag',
-    3: 'donderdag',
-    4: 'vrijdag',
-    5: 'zaterdag',
-    6: 'zondag',
+    0: "maandag",
+    1: "dinsdag",
+    2: "woensdag",
+    3: "donderdag",
+    4: "vrijdag",
+    5: "zaterdag",
+    6: "zondag",
 }
 day_names_short = {
-    0: 'ma',
-    1: 'di',
-    2: 'wo',
-    3: 'do',
-    4: 'vr',
-    5: 'za',
-    6: 'zo',
+    0: "ma",
+    1: "di",
+    2: "wo",
+    3: "do",
+    4: "vr",
+    5: "za",
+    6: "zo",
 }
 
 
 @dataclasses.dataclass
 @functools.total_ordering
 class File:
-    datetime: datetime.datetime
+    datetime: datetime
     name: str
     size: int
 
@@ -60,11 +62,16 @@ class File:
         day = day_names[self.datetime.weekday() % 7].lower()
         month = month_names[self.datetime.month]
         year = self.datetime.year
-        return f'Uitzending van {day} {self.datetime.day} {month} {year}'
+        return f"Uitzending van {day} {self.datetime.day} {month} {year}"
 
     def size_display(self):
         size = int(self.size / 1024 / 1024)
-        return f'{size} MB'
+        return f"{size} MB"
+
+    @computed_field
+    @property
+    def key(self) -> int:
+        return int(self.datetime.timestamp())
 
 
 class FileMetadata(TypedDict):
@@ -72,33 +79,31 @@ class FileMetadata(TypedDict):
 
 
 app = FastAPI()
-app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+type FtpFiles = list[tuple[pathlib.Path, FileMetadata]]
 
 
-@app.get('/', response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 async def ftp_listing(request: Request):
     async with aioftp.Client.context(**creds) as client:
-        ftp_files: list[tuple[str, FileMetadata]] = await client.list()
+        ftp_files: FtpFiles = await client.list()
 
-    now = datetime.datetime.now()
+    now = datetime.now()
 
     files: List[File] = []
 
     for path, metadata in ftp_files:
         path = pathlib.Path(path)
-        if path.suffix != '.mp3':
+        if path.suffix != ".mp3":
             continue
         try:
-            day, month, year = path.stem[:10].split('-')
-            hour, minute = path.stem[11:].split('-')
-            date = datetime.datetime(
-                int(year), int(month), int(day), int(hour), int(minute)
-            )
+            day, month, year = path.stem[:10].split("-")
+            hour, minute = path.stem[11:].split("-")
+            date = datetime(int(year), int(month), int(day), int(hour), int(minute))
         except Exception:
             continue
-        files.append(
-            File(name=path.name, size=int(metadata['size']), datetime=date)
-        )
+        files.append(File(name=path.name, size=int(metadata["size"]), datetime=date))
 
     files.sort()
 
@@ -114,36 +119,73 @@ async def ftp_listing(request: Request):
         items.append(f)
 
     return templates.TemplateResponse(
-        'index.html',
+        "index.html",
         {
-            'request': request,
-            'years': years,
-            'month_names': month_names,
-            'day_names': day_names,
-            'day_names_short': day_names_short,
+            "request": request,
+            "years": years,
+            "month_names": month_names,
+            "day_names": day_names,
+            "day_names_short": day_names_short,
         },
     )
 
 
-@app.get('/fetch/{filename}', name='fetch')
-async def ftp_fetch(request: Request, filename: str):
+async def fetch_ftp_listing() -> list[File]:
     async with aioftp.Client.context(**creds) as client:
-        files = [x.name for x in dict(await client.list()).keys()]
+        ftp_files: FtpFiles = await client.list()
 
-    if filename not in files:
-        raise HTTPException(404, 'File not found!')
+    files = [
+        File(
+            name=str(file_name),
+            size=int(metadata["size"]),
+            datetime=datetime.strptime(str(file_name), "%d-%m-%Y-%H-%M.mp3"),
+        )
+        for file_name, metadata in ftp_files
+        if file_name.suffix == ".mp3"
+    ]
 
-    return StreamingResponse(
-        stream_file(filename),
-        media_type='audio/mpeg',
-        headers={
-            'content-disposition': 'attachment; filename="{}"'.format(filename)
-        },
-    )
+    if files == []:
+        return []
+
+    files.sort(key=attrgetter("datetime"))
+
+    # Current hour will not be fully written to disk yet.
+    latest_file = files[-1]
+    current_hour = datetime.now().replace(second=0, microsecond=0)
+    if latest_file.datetime == current_hour:
+        files = files[:-1]
+
+    return files
 
 
-async def stream_file(filename):
+@app.get("/listing")
+async def uzg_listing() -> list[File]:
+    return await fetch_ftp_listing()
+
+
+async def stream_file_from_ftp_server(filename):
     async with aioftp.Client.context(**creds) as client:
         async with client.download_stream(filename) as stream:
             async for block in stream.iter_by_block():
                 yield block
+
+
+@app.get(
+    "/fetch/{filename}.mp3",
+    response_class=StreamingResponse,
+    responses={200: {"content": {"audio/mpeg": {}}}},
+)
+async def ftp_fetch(filename: str):
+    filename = filename + ".mp3"
+
+    for file in await fetch_ftp_listing():
+        if file.name == filename:
+            break
+    else:
+        raise HTTPException(404)
+
+    return StreamingResponse(
+        content=stream_file_from_ftp_server(file.name),
+        media_type="audio/mpeg",
+        headers={"content-length": str(file.size)},
+    )

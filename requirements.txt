@@ -1,5 +1,4 @@
 aioftp
-blue
 fastapi
 uvicorn[all]
 jinja2

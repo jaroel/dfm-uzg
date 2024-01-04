@@ -1,6 +1,6 @@
 ## Install:
 
-- python3.9 -m venv .
+- python3.12 -m venv .
 - source bin/activate.fish
 - pip install -r requirements.txt
 
@@ -15,4 +15,9 @@
 - fastapi
 - aoiftp
 - jinja2
-- blue code formatter
+
+## Usage:
+
+- http://localhost:8000/docs
+- JSON listing: http://localhost:8000/uzg/listing
+- Stream the audio/mpeg data: http://localhost:8000/uzg/listing/fetch/[filename.mp3]
