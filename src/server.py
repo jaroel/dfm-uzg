@@ -105,7 +105,7 @@ async def ftp_listing(request: Request):
             continue
         files.append(File(name=path.name, size=int(metadata["size"]), datetime=date))
 
-    files.sort()
+    files.sort(reverse=False)
 
     # Latest mp3 might not be there just yet.
     if files and files[-1].datetime == now.replace(second=0, microsecond=0):
@@ -144,16 +144,22 @@ async def fetch_ftp_listing() -> list[File]:
         if file_name.suffix == ".mp3"
     ]
 
-    if files == []:
+    if not files:
         return []
 
-    files.sort(key=attrgetter("datetime"))
+    # files.append(
+    #     File(
+    #         name="fake.mp3",
+    #         size=1234,
+    #         datetime=datetime.strptime("25-01-2024-02-00.mp3", "%d-%m-%Y-%H-%M.mp3"),
+    #     )
+    # )
+    files.sort(key=attrgetter("datetime"), reverse=True)  # newest first
 
     # Current hour will not be fully written to disk yet.
-    latest_file = files[-1]
-    current_hour = datetime.now().replace(second=0, microsecond=0)
-    if latest_file.datetime == current_hour:
-        files = files[:-1]
+    current_hour = datetime.now().replace(minute=0, second=0, microsecond=0)
+    if files[0].datetime.replace(minute=0, second=0, microsecond=0) == current_hour:
+        files = files[1:]
 
     return files
 
